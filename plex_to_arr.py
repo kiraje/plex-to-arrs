@@ -2,6 +2,8 @@ import requests
 import xml.etree.ElementTree as ET
 from dotenv import load_dotenv
 import os
+import schedule
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,13 +14,13 @@ RADARR_API_KEY = os.getenv("RADARR_API_KEY")
 SONARR_API_KEY = os.getenv("SONARR_API_KEY")
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
-RADARR_URL = "http://192.168.1.15:7878/api/v3"
-SONARR_URL = "http://192.168.1.15:8989/api/v3"
-RADARR_ROOT_FOLDER = "/config"
-SONARR_ROOT_FOLDER = "/config"
+RADARR_URL = os.getenv("RADARR_URL", "http://192.168.5.104:7878/api/v3")
+SONARR_URL = os.getenv("SONARR_URL", "http://192.168.5.106:8989/api/v3")
+RADARR_ROOT_FOLDER = os.getenv("RADARR_ROOT_FOLDER", "/config")
+SONARR_ROOT_FOLDER = os.getenv("SONARR_ROOT_FOLDER", "/config")
 
 # Language Profile ID for Sonarr
-LANGUAGE_PROFILE = 1  # Adjust this value based on your Sonarr configuration
+LANGUAGE_PROFILE = int(os.getenv("LANGUAGE_PROFILE", 1))  # Adjust this value based on your Sonarr configuration
 
 def get_quality_profile_id():
     quality_profiles_url = f"{RADARR_URL}/qualityProfile?apikey={RADARR_API_KEY}"
@@ -50,7 +52,6 @@ def fetch_tmdb_id(title, media_type):
     if response.status_code == 200:
         results = response.json().get('results')
         if results:
-            # Assuming the first result is the most relevant one
             return results[0]['id']
         else:
             print(f"No TMDB ID found for {media_type} '{title}'")
@@ -115,7 +116,7 @@ def search_and_add_series(search_term):
     if response.status_code == 200:
         results = response.json()
         if results:
-            series = results[0]  # Assuming the first search result is the desired series
+            series = results[0]
             series_id = series["tvdbId"]
             add_series_url = f"{SONARR_URL}/series"
             payload = {
@@ -144,7 +145,7 @@ def search_and_add_series(search_term):
     else:
         print("Failed to perform series search.")
 
-def main():
+def process_watchlist():
     print("Starting script...")
     watchlist = fetch_plex_watchlist()
     print(f"Found {len(watchlist)} items in Plex watchlist")
@@ -162,6 +163,13 @@ def main():
                 search_and_add_series(title)
         else:
             print(f"Unknown media type found: {media_type}")
+
+def main():
+    schedule.every(10).minutes.do(process_watchlist)
+    
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
 if __name__ == "__main__":
     main()
