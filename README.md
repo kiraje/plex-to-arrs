@@ -1,4 +1,8 @@
-# Plex to Radarr Integration
+# Plex to Radarr and Sonarr Integration
+
+Updated to scan every 10mins
+
+the script wont run right away but after 10mins
 
 This repository provides a script for integrating Plex watchlist with Radarr. It allows users to automatically add movies from their Plex watchlist to Radarr for automated downloading and management.
 
